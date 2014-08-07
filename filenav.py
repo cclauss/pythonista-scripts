@@ -474,12 +474,7 @@ class FileDataSource(object):
 
     def tableview_title_for_header(self, tableview, section):
         # Return a title for the given section.
-        if section == 0:
-            return "Folders"
-        elif section == 1:
-            return "Files"
-        else:
-            return "errsec"
+        return = {0 : "Folders", 1 : "Files"}.get(section, "errsec")
 
     def tableview_can_delete(self, tableview, section, row):
         # Return True if the user should be able to delete the given row.
