@@ -515,117 +515,77 @@ class StatDataSource(object):
     def __init__(self, fi=CWD_FILE_ITEM):
         # init
         self.fi = fi
-        self.refresh()
-        self.lists = [self.actions, self.stats, self.flags]
-        self.list_details = [self.action_details, self.stat_details, self.flag_details]
-        self.list_imgs = [self.action_imgs, self.stat_imgs, self.flag_imgs]
+        self.lists = (self.refresh_actions(),
+                      self.refresh_stats(),
+                      self.refresh_flags())
 
-    def refresh(self):
-        # Refresh stat data
-        self.actions = []
-        self.action_details = []
-        self.action_imgs = []
-        self.stats = []
-        self.stat_details = []
-        self.stat_imgs = []
-        self.flags = []
-        self.flag_details = []
-        self.flag_imgs = []
+    def refresh_actions(self):
+        if self.fi.isdir():     # actions for folders
+            lst = [["Go here", "Shellista", "ionicons-ios7-arrow-forward-32"]]
+        elif self.fi.isfile():  # actions for files
+            lst = [["Preview", "Quick Look", "ionicons-ios7-eye-32"],
+                   ["Open in Editor", "Pythonista", "ionicons-ios7-compose-32"],
+                   ["Copy & Open", "Pythonista", "ionicons-ios7-copy-32"],
+                   ["Copy & Open as Text", "Pythonista", "ionicons-document-text-32"],
+                   # haven't yet been able to integrate hexviewer
+                   # ["Open in Hex Viewer", "hexviewer", "ionicons-pound-32"],
+                   ["Open in and Share", "External Apps", "ionicons-ios7-paperplane-32"]]
+        else:
+            lst = []
+        for i in xrange(len(lst)):
+            lst[i][2] = ui.Image.named(lst[i][2])  # convert strings to images
+            lst[i] = tuple(lst[i])
+        return tuple(lst)
+        
+    def refresh_stats(self):  # general statistics
+        def fmt_utc(dt):
+            return str(datetime.datetime.utcfromtimestamp(dt)) + " UTC"
+
+        def owner_info(uid):
+            uname, _, _, _, udesc, _, _ = pwd.getpwuid(uid)
+            return "{} ({}={})".format(udesc, uid, uname)
+
         stres = self.fi.stat
-        
-        if self.fi.isdir():
-            # actions for folders
-            self.actions.append("Go here")
-            self.action_details.append("Shellista")
-            self.action_imgs.append(ui.Image.named("ionicons-ios7-arrow-forward-32"))
-        elif self.fi.isfile():
-            # actions for files
-            self.actions.append("Preview")
-            self.action_details.append("Quick Look")
-            self.action_imgs.append(ui.Image.named("ionicons-ios7-eye-32"))
-            self.actions.append("Open in Editor")
-            self.action_details.append("Pythonista")
-            self.action_imgs.append(ui.Image.named("ionicons-ios7-compose-32"))
-            self.actions.append("Copy & Open")
-            self.action_details.append("Pythonista")
-            self.action_imgs.append(ui.Image.named("ionicons-ios7-copy-32"))
-            self.actions.append("Copy & Open as Text")
-            self.action_details.append("Pythonista")
-            self.action_imgs.append(ui.Image.named("ionicons-document-text-32"))
-            # haven't yet been able to integrate hexviewer
-            #self.actions.append("Open in Hex Viewer")
-            #self.action_details.append("hexviewer")
-            #self.action_imgs.append(ui.Image.named("ionicons-pound-32"))
-            self.actions.append("Open in and Share")
-            self.action_details.append("External Apps")
-            self.action_imgs.append(ui.Image.named("ionicons-ios7-paperplane-32"))
-        
-        # general statistics
-        self.stats.append("Size")
-        self.stat_details.append(format_size(stres.st_size))
-        self.stat_imgs.append(ui.Image.named("ionicons-code-working-32"))
-        self.stats.append("Created")
-        self.stat_details.append(str(datetime.datetime.utcfromtimestamp(stres.st_ctime)) + " UTC")
-        self.stat_imgs.append(ui.Image.named("ionicons-document-32"))
-        self.stats.append("Opened")
-        self.stat_details.append(str(datetime.datetime.utcfromtimestamp(stres.st_atime)) + " UTC")
-        self.stat_imgs.append(ui.Image.named("ionicons-folder-32"))
-        self.stats.append("Modified")
-        self.stat_details.append(str(datetime.datetime.utcfromtimestamp(stres.st_mtime)) + " UTC")
-        self.stat_imgs.append(ui.Image.named("ionicons-ios7-compose-32"))
-        self.stats.append("Owner")
-        self.stat_details.append("{udesc} ({uid}={uname})".format(uid=stres.st_uid, uname=pwd.getpwuid(stres.st_uid)[0], udesc=pwd.getpwuid(stres.st_uid)[4]))
-        self.stat_imgs.append(ui.Image.named("ionicons-ios7-person-32"))
-        self.stats.append("Owner Group")
-        self.stat_details.append(str(stres.st_gid))
-        self.stat_imgs.append(ui.Image.named("ionicons-ios7-people-32"))
-        self.stats.append("Flags")
-        self.stat_details.append(str(bin(stres.st_mode)))
-        self.stat_imgs.append(ui.Image.named("ionicons-ios7-flag-32"))
-        #self.stat_details += ["Detail"] * len(self.stats)
-        
-        flint = stres.st_mode
-        
-        self.flags.append("Is Socket")
-        self.flag_details.append(str(stat.S_ISSOCK(flint)))
-        self.flags.append("Is Symlink")
-        self.flag_details.append(str(stat.S_ISLNK(flint)))
-        self.flags.append("Is File")
-        self.flag_details.append(str(stat.S_ISREG(flint)))
-        self.flags.append("Is Block Dev.")
-        self.flag_details.append(str(stat.S_ISBLK(flint)))
-        self.flags.append("Is Directory")
-        self.flag_details.append(str(stat.S_ISDIR(flint)))
-        self.flags.append("Is Char Dev.")
-        self.flag_details.append(str(stat.S_ISCHR(flint)))
-        self.flags.append("Is FIFO")
-        self.flag_details.append(str(stat.S_ISFIFO(flint)))
-        self.flags.append("Set UID Bit")
-        self.flag_details.append(str(check_bit(flint, stat.S_ISUID)))
-        self.flags.append("Set GID Bit")
-        self.flag_details.append(str(check_bit(flint, stat.S_ISGID)))
-        self.flags.append("Sticky Bit")
-        self.flag_details.append(str(check_bit(flint, stat.S_ISVTX)))
-        self.flags.append("Owner Read")
-        self.flag_details.append(str(check_bit(flint, stat.S_IRUSR)))
-        self.flags.append("Owner Write")
-        self.flag_details.append(str(check_bit(flint, stat.S_IWUSR)))
-        self.flags.append("Owner Exec")
-        self.flag_details.append(str(check_bit(flint, stat.S_IXUSR)))
-        self.flags.append("Group Read")
-        self.flag_details.append(str(check_bit(flint, stat.S_IRGRP)))
-        self.flags.append("Group Write")
-        self.flag_details.append(str(check_bit(flint, stat.S_IWGRP)))
-        self.flags.append("Group Exec")
-        self.flag_details.append(str(check_bit(flint, stat.S_IXGRP)))
-        self.flags.append("Others Read")
-        self.flag_details.append(str(check_bit(flint, stat.S_IROTH)))
-        self.flags.append("Others Write")
-        self.flag_details.append(str(check_bit(flint, stat.S_IWOTH)))
-        self.flags.append("Others Exec")
-        self.flag_details.append(str(check_bit(flint, stat.S_IXOTH)))
-        #self.flag_details += ["Detail"] * len(self.flags)
-        self.flag_imgs += [ui.Image.named("ionicons-ios7-flag-32")] * len(self.flags)
+        lst = [["Size", format_size(stres.st_size), "ionicons-code-working-32"],
+               ["Created",  fmt_utc(stres.st_ctime), "ionicons-document-32"],
+               ["Opened",   fmt_utc(stres.st_atime), "ionicons-folder-32"],
+               ["Modified", fmt_utc(stres.st_mtime), "ionicons-ios7-compose-32"],
+               ["Owner", owner_info(stres.st_uid), "ionicons-ios7-person-32"],
+               ["Owner Group", str(stres.st_gid),  "ionicons-ios7-people-32"],
+               ["Flags", str(bin(stres.st_mode)),  "ionicons-ios7-flag-32"]]
+        for i in xrange(len(lst)):
+            lst[i][2] = ui.Image.named(lst[i][2])  # convert strings to images
+            lst[i] = tuple(lst[i])
+        return tuple(lst)
+
+    def refresh_flags(self):
+        def check_bit(num, bit):  # Check if bit is set in num
+            return (num ^ bit) < num
+
+        flint = self.fi.stat.st_mode
+        lst = [["Is Socket",     stat.S_ISSOCK(flint)],
+               ["Is Symlink",    stat.S_ISLNK(flint)],
+               ["Is File",       stat.S_ISREG(flint)],
+               ["Is Block Dev.", stat.S_ISBLK(flint)],
+               ["Is Directory",  stat.S_ISDIR(flint)],
+               ["Is Char Dev.",  stat.S_ISCHR(flint)],
+               ["Is FIFO",       stat.S_ISFIFO(flint)],
+               ["Set UID Bit",   check_bit(flint, stat.S_ISUID)],
+               ["Set GID Bit",   check_bit(flint, stat.S_ISGID)],
+               ["Sticky Bit",    check_bit(flint, stat.S_ISVTX)],
+               ["Owner Read",    check_bit(flint, stat.S_IRUSR)],
+               ["Owner Write",   check_bit(flint, stat.S_IWUSR)],
+               ["Owner Exec",    check_bit(flint, stat.S_IXUSR)],
+               ["Group Read",    check_bit(flint, stat.S_IRGRP)],
+               ["Group Write",   check_bit(flint, stat.S_IWGRP)],
+               ["Group Exec",    check_bit(flint, stat.S_IXGRP)],
+               ["Others Read",   check_bit(flint, stat.S_IROTH)],
+               ["Others Write",  check_bit(flint, stat.S_IWOTH)],
+               ["Others Exec",   check_bit(flint, stat.S_IXOTH)]]
+        icon = ui.Image.named("ionicons-ios7-flag-32")
+        for i in xrange(len(lst)):
+            lst[i] = (lst[i][0], str(lst[i][1]), icon)
+        return tuple(lst)
     
     def tableview_number_of_sections(self, tableview):
         # Return the number of sections
@@ -636,26 +596,18 @@ class StatDataSource(object):
         return len(self.lists[section])
 
     def tableview_cell_for_row(self, tableview, section, row):
+        name, desc, icon = self.lists[section][row]
         # Create and return a cell for the given section/row
-        if section == 0:
-            cell = ui.TableViewCell("subtitle")
-            cell.image_view.image = self.list_imgs[section][row]
-        else:
-            cell = ui.TableViewCell("value2")
-        cell.text_label.text = self.lists[section][row]
-        cell.detail_text_label.text = self.list_details[section][row]
+        cell = ui.TableViewCell("subtitle")
+        cell.text_label.text = name
+        cell.detail_text_label.text = desc
+        cell.image_view.image = icon
         return cell
 
     def tableview_title_for_header(self, tableview, section):
         # Return a title for the given section.
-        if section == 0:
-            return "Actions"
-        elif section == 1:
-            return "Statistics"
-        elif section == 2:
-            return "Flags"
-        else:
-            return "errsec"
+        lookup = {0 : "Actions", 1 : "Statistics", 2 : "Flags"}
+        return lookup.get(section, "errsec")
 
     def tableview_can_delete(self, tableview, section, row):
         # Return True if the user should be able to delete the given row.
@@ -736,10 +688,6 @@ class StatDataSource(object):
     def tableview_accessory_button_tapped(self, tableview, section, row):
         # Called when the user taps a row's accessory (i) button
         pass
-
-def check_bit(num, bit):
-    # Check if bit is set in num
-    return (num ^ bit) < num
 
 def format_size(size, long=True):
     if size < 1024:
