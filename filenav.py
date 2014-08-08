@@ -215,20 +215,45 @@ FILE_DESCS = {
 
 # dict of all file type icons
 FILE_ICONS = {
-              "app":       ui.Image.named("../FileUI"),
-              "archive":   ui.Image.named("ionicons-filing-32"),
-              "audio":     ui.Image.named("ionicons-ios7-musical-notes-32"),
-              "code":      ui.Image.named("../FilePY"),
-              "code_tags": ui.Image.named("ionicons-code-32"),
-              "data":      ui.Image.named("ionicons-social-buffer-32"),
-              "file":      ui.Image.named("ionicons-document-32"),
-              "folder":    ui.Image.named("ionicons-folder-32"),
-              "font":      ui.Image.named("../fonts-selected"),
-              "git":       ui.Image.named("ionicons-social-github-32"),
-              "image":     ui.Image.named("ionicons-image-32"),
-              "text":      ui.Image.named("ionicons-document-text-32"),
-              "video":     ui.Image.named("ionicons-ios7-film-outline-32"),
+              "app":       "../FileUI",
+              "archive":   "ionicons-filing-32",
+              "audio":     "ionicons-ios7-musical-notes-32",
+              "code":      "../FilePY",
+              "code_tags": "ionicons-code-32",
+              "data":      "ionicons-social-buffer-32",
+              "file":      "ionicons-document-32",
+              "folder":    "ionicons-folder-32",
+              "font":      "../fonts-selected",
+              "git":       "ionicons-social-github-32",
+              "image":     "ionicons-image-32",
+              "text":      "ionicons-document-text-32",
+              "video":     "ionicons-ios7-film-outline-32",
               }
+FILE_ICONS = {k:ui.Image.named(v) for k,v in FILE_ICONS.iteritems()}
+
+def get_file_type(file_name):
+    def get_file_type_from_ext(file_name):
+        _, ext = os.path.splitext(file_name)
+        for file_type, exts in FILE_TYPES.iteritems():
+            if ext in exts:
+                return file_type
+        return None
+
+    file_type = get_file_type_from_ext(file_name)
+    if (os.path.isdir(file_name)
+    and not file_type in ("app", "archive", "bundle", "git")):
+        return "folder"
+    return file_type or "file"
+
+def get_file_desc(file_type):
+    return FILE_DESCS.get(file_type, None)
+
+def get_file_icon(file_type):
+    return FILE_ICONS.get(file_type, None)
+
+def get_file_info(file_name):
+    file_type = get_file_type(file_name)
+    return (file_type, get_file_desc(file_type), get_file_icon(file_type))
 
 def get_thumbnail(path):
     def path_to_thumbnail(path):
